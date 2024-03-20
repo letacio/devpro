@@ -5,6 +5,7 @@ def sort_products(products, sort_key, ascending=True):
         if not ascending:
             sorted_products.reverse()
         print(sorted_products)
+        return sorted_products
 
     except KeyError:
         print("Key not found in dictionary")
