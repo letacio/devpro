@@ -1,0 +1,116 @@
+name: Automated Tests
+
+on:
+  push:
+    branches: [ "development", "master", "main","qa_backend"]
+  pull_request:
+    branches: [ "development", "master", "main","qa_backend"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      REQUIREMENTS_PATH: "requirements.txt"
+   #defaults:
+     # run:
+     #   working-directory: qa_automated_tests
+
+    steps:
+    - name: Code Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      id: setuppython
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: "3.12.0"
+
+    #cache requirements path is relative to root.
+    - name: Cache
+      uses: actions/cache@v3
+      id: cache
+      with:
+        path: ${{ env.pythonLocation }} 
+        key: ${{ runner.os }}-pip-${{ env.pythonLocation }}-${{ hashFiles(env.REQUIREMENTS_PATH) }}
+
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    # remmeber: requirements is relative to working folder
+    - name: Install dependencies
+      if: steps.cache.outputs.cache-hit != 'true' 
+      run: |
+        pip install --upgrade pip 
+        if [ -f ${{ env.REQUIREMENTS_PATH }} ]; then pip install -r ${{ env.REQUIREMENTS_PATH }}; fi
+
+    
+    - name: Save cache forcefully
+      #run: /build.sh
+      uses: actions/cache/save@v3
+      if: steps.cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ env.pythonLocation }} 
+        key: ${{ runner.os }}-pip-${{ env.pythonLocation }}-${{ hashFiles(env.REQUIREMENTS_PATH) }}
+
+    - name: Extract branch name
+      id: extract_branch
+      run: |
+        branch_name=${GITHUB_REF#refs/heads/}
+        echo "::set-output name=branch::$branch_name"
+
+    - name: Set BRANCH_NAME environment variable
+      run: echo "BRANCH_NAME=${{ steps.extract_branch.outputs.branch }}" >> $GITHUB_ENV
+
+    - name: Print branch name for debugging
+      run: |
+        echo "Branch Name: ${{ env.BRANCH_NAME }}"
+
+     # for now only uses dev
+    - name: Set env variable based on branch name 
+      run: |
+        if [[ "${{ env.BRANCH_NAME }}" == *dev* ]]; then
+          echo "ENV=dev" >> $GITHUB_ENV
+
+        elif [[ "${{ env.BRANCH_NAME }}" == *qa_backend* ]]; then
+          echo "ENV=dev" >> $GITHUB_ENV
+
+        elif [[ "${{ env.BRANCH_NAME }}" == *qa* ]]; then
+          echo "ENV=qa" >> $GITHUB_ENV
+        elif [[ "${{ env.BRANCH_NAME }}" == *main* ]]; then
+          echo "ENV=main" >> $GITHUB_ENV
+        elif [[ "${{ env.BRANCH_NAME }}" == *staging* ]]; then
+          echo "ENV=uat" >> $GITHUB_ENV  
+        else
+          echo "ENV=dev" >> $GITHUB_ENV # Optional: Fallback value
+        fi
+
+    - name: Print env variable for debugging
+      run: |
+        echo "Environment: ${{ env.ENV }}"
+
+      # python -m pytest -vv --tb=no -rA -n 8 -> versao bonitinha, sem um monte de coisa na tela.
+      # python -m pytest -vv --tb=long -rA -n 8  -> versao bonitinha, que mostra TUDO, bom pra debugar
+      # a versao que estou usando mostra tudo, para ver os erros
+    
+    - name: Run QA Tests - Sequential tests
+      run: |  # This first run is for tests that impact on each other, so they must be run in sequence. For the purpose we have now, it's not needed, it's just for demonstration.
+        echo "Starting Sequential Tests ...";
+        python -m pytest -m sequential_tests --tb=long -rA -vv || true
+        
+
+    - name: Run QA Tests - Parallel tests
+      run: |  # For tests that can be run in parallel. They might break as they all interact with same filename, but it's just for demonstration.
+        echo "Starting non-sequential tests...";
+        python -m pytest -m "not sequential_tests" --tb=long -rA -vv -n 10;
+
+
+    
+        
+        
+
+         
+        
