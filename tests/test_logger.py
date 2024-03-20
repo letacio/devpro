@@ -2,6 +2,9 @@ import os
 import pytest
 from Task1_Logger import log_message
 
+
+pytestmark = pytest.mark.sequential_tests
+
 @pytest.fixture
 def log_file():
     log_file = "test.log"
@@ -9,7 +12,6 @@ def log_file():
     if os.path.exists(log_file):
         os.remove(log_file)
 
-@pytest.mark.sequential_tests
 def test_log_message_creates_file(log_file):
     log_message(log_file, "Test message", "INFO")
     assert os.path.exists(log_file)

@@ -97,13 +97,13 @@ jobs:
       # a versao que estou usando mostra tudo, para ver os erros
     
     - name: Run QA Tests - Sequential tests
-      run: |  # This first run is for tests that impact on each other, so they must be run in sequence. For the purpose we have now, it's not needed, it's just for demonstration.
+      run: |  # This first run is for tests that impact on each other, so they must be run in sequence.
         echo "Starting Sequential Tests ...";
         python -m pytest -m sequential_tests --tb=long -rA -vv || true
         
 
     - name: Run QA Tests - Parallel tests
-      run: |  # For tests that can be run in parallel. They might break as they all interact with same filename, but it's just for demonstration.
+      run: |  # For tests that can be run in parallel. 
         echo "Starting non-sequential tests...";
         python -m pytest -m "not sequential_tests" --tb=long -rA -vv -n 10;
 
