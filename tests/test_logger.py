@@ -1,6 +1,6 @@
 import os
 import pytest
-from Logger import log_message
+from Task1_Logger import log_message
 
 @pytest.fixture
 def log_file():
